@@ -49,6 +49,9 @@ class UI {
     for (const k of ['loading', 'menu', 'hud', 'pause', 'photoBar', 'shareModal', 'settings']) {
       this.el[k] && this.el[k].classList.toggle('visible', k === name);
     }
+    // 触屏按钮仅驾驶态显示，避免遮挡菜单/暂停/战报等面板
+    const touch = document.getElementById('touch');
+    if (touch) touch.classList.toggle('visible', name === 'hud');
   }
   hideAll() { this.show(null); }
   letterbox(on) {
@@ -569,6 +572,8 @@ class Game {
     $('shareImg').src = card.toDataURL('image/png');
     this.ui.hideAll();
     this.ui.show('shareModal');
+    // 进入独立的战报态：行程已结算，防止 Esc「恢复驾驶」绕过结算重复计分
+    this.state = 'share';
   }
 
   // ---------- UI 绑定 ----------
@@ -663,7 +668,6 @@ class Game {
       if (!open) this.ui.renderHistory(getRuns());
     });
     on('btnCloseShare', () => this.goMenu());
-    if (IS_MOBILE) $('touch').classList.add('visible');
     this.input.bindTouch();
   }
 
@@ -687,11 +691,14 @@ class Game {
       this.audio.init();
       if (code === 'KeyM') this.ui.setMuted(this.audio.toggleMute());
       if (this.state === 'run') {
-        if (code === 'Escape' || code === 'KeyP') this.pauseGame();
+        if (code === 'Escape') this.pauseGame();
+        else if (code === 'KeyP') this.enterPhoto();
       } else if (this.state === 'pause') {
         if (code === 'Escape') this.resumeGame();
       } else if (this.state === 'photo') {
         if (code === 'Escape' || code === 'KeyP') this.exitPhoto();
+      } else if (this.state === 'share') {
+        if (code === 'Escape') this.goMenu();
       }
     });
     // 任意交互解锁音频
