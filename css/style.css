@@ -291,6 +291,7 @@ body.theme-ink #paperOverlay { opacity: 1; }
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 2px; }
 .set-row > label { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8); flex: none; }
 .set-row input[type="range"] { flex: 1; max-width: 200px; accent-color: var(--accent); height: 22px; }
+.set-note { font-size: 12px; line-height: 1.5; color: rgba(255,255,255,0.55); margin: 2px 2px 6px; text-align: left; }
 .seg { display: flex; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
 .seg button { padding: 7px 14px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.05); transition: background .15s ease, color .15s ease; }
 .seg button + button { border-left: 1px solid var(--line); }

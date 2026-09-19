@@ -433,6 +433,7 @@ class Game {
 
   // ---------- 流程 ----------
   startRun({ mode, themeKey }) {
+    this.audio.unlock(); // 开始按钮的手势是最佳解锁时机
     this.mode = mode;
     let seed;
     if (mode === 'daily') {
@@ -468,6 +469,9 @@ class Game {
     this.ui.setTags(this.theme, mode === 'daily' ? '每日挑战' : mode === 'time' ? '计时赛' : '自由驾驶');
     this.ui.setTime(mode === 'time' ? this.timeAttack.timeLeft : null);
     this.audio.setAmbient(this.theme);
+    // 解锁失败兜底：告知玩家点按屏幕即可开启声音
+    const st = this.audio.ctxA && this.audio.ctxA.state;
+    if (st && st !== 'running') this.ui.toast('🔇 点按屏幕任意处开启声音');
   }
 
   goMenu() {
@@ -499,6 +503,11 @@ class Game {
     this._settingsFrom = from; // 'menu' | 'pause'
     this.ui.show('settings');
     this.ui.syncSettings(this.settings.data);
+    // iPhone 物理静音拨片会整体静掉 WebAudio，代码无法绕过，只能提示
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform || ''));
+    const note = $('audioNote');
+    if (note) note.style.display = isIOS ? 'block' : 'none';
   }
   closeSettings() {
     this.settings.apply(this);
@@ -620,6 +629,16 @@ class Game {
     on('btnSettings', () => this.openSettings('menu'));
     on('btnPauseSettings', () => this.openSettings('pause'));
     on('btnSetBack', () => this.closeSettings());
+    on('setAudioTest', () => {
+      const r = this.audio.testBeep();
+      const msg = {
+        running: '🔊 声音正常',
+        muted: '当前处于静音，先取消静音再测试',
+        suspended: '音频被系统挂起，请再点一次',
+        interrupted: '音频被系统中断，请再点一次',
+      }[r] || '此设备不支持网页音频';
+      this.ui.toast(msg);
+    });
     const live = (id, fn) => { const el = $(id); if (el) el.addEventListener('input', fn); };
     live('setVolume', (e) => {
       this.settings.data.volume = e.target.value / 100;
@@ -701,11 +720,13 @@ class Game {
         if (code === 'Escape') this.goMenu();
       }
     });
-    // 任意交互解锁音频：移动端 WebView 只认手势内的 resume（touchend 兼容旧 iOS/微信），
+    // 任意交互解锁音频：不同内核只认不同手势（老 iOS/微信认 touchend，部分安卓认 touchstart），
     // 且切后台后上下文可能再次挂起，故持续监听而非 once
     const unlockAudio = () => this.audio.unlock();
     window.addEventListener('pointerdown', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio, { passive: true });
     window.addEventListener('touchend', unlockAudio);
+    window.addEventListener('click', unlockAudio);
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) unlockAudio();
     });

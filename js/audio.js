@@ -1,4 +1,6 @@
 // WebAudio 程序化音效：引擎/风/收集/险过/碰撞/氮气 + 主题氛围垫
+import { IS_MOBILE } from './config.js';
+
 function lsGet(k) {
   try { return localStorage.getItem(k); } catch (e) { return null; }
 }
@@ -9,22 +11,27 @@ export class AudioSystem {
     this.muted = lsGet('er_muted') === '1';
     this.ready = false;
     this.volume = 0.8;
+    // 手机扬声器增益补偿 + 是否出现过用户手势（解锁前提）
+    this.out = IS_MOBILE ? 1.0 : 0.8;
+    this.gestureSeen = false;
+    this._lastUnlock = 0;
   }
 
   init() {
     if (this.ready) return;
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
       this.ctxA = new AC();
       const c = this.ctxA;
       this.resumeCtx();
       this.master = c.createGain();
-      this.master.gain.value = this.muted ? 0 : this.volume * 0.8;
+      this.master.gain.value = this.muted ? 0 : this.volume * this.out;
       const comp = c.createDynamicsCompressor();
       this.master.connect(comp);
       comp.connect(c.destination);
 
-      // 引擎：双锯齿波 + 低通
+      // 引擎：双锯齿波 + 低通；移动端补一路 3 倍频谐波（手机扬声器放不出低频基音）
       this.engGain = c.createGain();
       this.engGain.gain.value = 0;
       this.engFilter = c.createBiquadFilter();
@@ -36,8 +43,14 @@ export class AudioSystem {
       this.osc1.connect(this.engFilter); this.osc2.connect(og); og.connect(this.engFilter);
       this.engFilter.connect(this.engGain); this.engGain.connect(this.master);
       this.osc1.start(); this.osc2.start();
+      if (IS_MOBILE) {
+        this.osc3 = c.createOscillator(); this.osc3.type = 'square'; this.osc3.frequency.value = 180;
+        const og3 = c.createGain(); og3.gain.value = 0.22;
+        this.osc3.connect(og3); og3.connect(this.engFilter);
+        this.osc3.start();
+      }
 
-      // 风：白噪声循环 + 带通
+      // 风：白噪声循环 + 带通（移动端中心频率上移，小扬声器更易闻）
       const len = c.sampleRate * 2;
       this.noiseBuf = c.createBuffer(1, len, c.sampleRate);
       const data = this.noiseBuf.getChannelData(0);
@@ -45,7 +58,7 @@ export class AudioSystem {
       for (let i = 0; i < len; i++) { seedN = (seedN * 16807) % 2147483647; data[i] = (seedN / 2147483647) * 2 - 1; }
       this.windSrc = c.createBufferSource();
       this.windSrc.buffer = this.noiseBuf; this.windSrc.loop = true;
-      this.windFilter = c.createBiquadFilter(); this.windFilter.type = 'bandpass'; this.windFilter.frequency.value = 700; this.windFilter.Q.value = 0.6;
+      this.windFilter = c.createBiquadFilter(); this.windFilter.type = 'bandpass'; this.windFilter.frequency.value = IS_MOBILE ? 1100 : 700; this.windFilter.Q.value = 0.6;
       this.windGain = c.createGain(); this.windGain.gain.value = 0;
       this.windSrc.connect(this.windFilter); this.windFilter.connect(this.windGain); this.windGain.connect(this.master);
       this.windSrc.start();
@@ -55,22 +68,47 @@ export class AudioSystem {
     } catch (e) { console.warn('audio init failed', e); }
   }
 
-  // 移动端解锁：iOS/部分 WebView 创建后处于 suspended，需在手势内 resume + 播放静音缓冲
+  // 移动端解锁：suspended 之外 iOS 还有 interrupted 态，一并 resume
   resumeCtx() {
     const c = this.ctxA;
-    if (!c || c.state !== 'suspended') return;
-    c.resume();
-    const buf = c.createBuffer(1, 1, 22050);
-    const src = c.createBufferSource();
-    src.buffer = buf;
-    src.connect(c.destination);
-    src.start(0);
+    if (!c || !c.state || c.state === 'running') return;
+    try {
+      const p = c.resume();
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) {}
+  }
+
+  // iOS/旧 WebView 需在手势内实际播放一段静音缓冲才算解锁音频会话（直连 destination，不经过静音闸）
+  playUnlockBuffer() {
+    const c = this.ctxA;
+    if (!c) return;
+    const now = performance.now();
+    if (now - this._lastUnlock < 400) return;
+    this._lastUnlock = now;
+    try {
+      const buf = c.createBuffer(1, Math.floor(c.sampleRate * 0.2) || 1, c.sampleRate);
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      src.connect(c.destination);
+      src.start(0);
+    } catch (e) {}
   }
 
   // 在任意用户手势中调用，安全且幂等
   unlock() {
+    this.gestureSeen = true;
     if (!this.ready) this.init();
     this.resumeCtx();
+    this.playUnlockBuffer();
+  }
+
+  // 设置面板自查：返回 'running' | 'muted' | ctx.state | null(不支持)
+  testBeep() {
+    this.unlock();
+    if (!this.ready) return null;
+    if (this.muted) return 'muted';
+    this.blip(6);
+    return (this.ctxA.state === 'running') ? 'running' : (this.ctxA.state || 'suspended');
   }
 
   startAmbient() {
@@ -94,7 +132,9 @@ export class AudioSystem {
       ink: [87.31, 130.81, 174.61, 261.63],
     };
     const ch = chords[theme.key] || chords.sunset;
-    ch.forEach((f, i) => {
+    // 手机扬声器放不出低频：移动端整体高八度（和声不变，小扬声器可闻）
+    const notes = IS_MOBILE ? ch.map(f => f * 2) : ch;
+    notes.forEach((f, i) => {
       const o = c.createOscillator();
       o.type = i % 2 ? 'sine' : 'triangle';
       o.frequency.value = f;
@@ -134,11 +174,18 @@ export class AudioSystem {
   // 每帧调用：速度 → 引擎/风
   update(speedNorm, nitroActive, driving) {
     if (!this.ready) return;
-    const t = this.ctxA.currentTime;
+    const c = this.ctxA;
+    // 挂起看门狗：某些安卓 WebView 离开手势后仍保持挂起，每秒补一次 resume
+    if (c.state && c.state !== 'running' && this.gestureSeen) {
+      const now = performance.now();
+      if (now - this._lastUnlock > 1000) { this._lastUnlock = now; this.resumeCtx(); }
+    }
+    const t = c.currentTime;
     const rpm = 0.18 + speedNorm * 0.82;
     const f = 46 + rpm * 105 + (nitroActive ? 24 : 0);
     this.osc1.frequency.setTargetAtTime(f, t, 0.08);
     this.osc2.frequency.setTargetAtTime(f * 1.502, t, 0.08);
+    if (this.osc3) this.osc3.frequency.setTargetAtTime(f * 3.01, t, 0.08);
     this.engFilter.frequency.setTargetAtTime(300 + speedNorm * 1600, t, 0.1);
     this.engGain.gain.setTargetAtTime(driving ? 0.05 + speedNorm * 0.055 : 0, t, 0.15);
     this.windGain.gain.setTargetAtTime(driving ? speedNorm * 0.11 + (nitroActive ? 0.05 : 0) : 0.02, t, 0.2);
@@ -202,14 +249,14 @@ export class AudioSystem {
   setVolume(v) {
     this.volume = Math.max(0, Math.min(1, v));
     if (this.ready && !this.muted) {
-      this.master.gain.setTargetAtTime(this.volume * 0.8, this.ctxA.currentTime, 0.05);
+      this.master.gain.setTargetAtTime(this.volume * this.out, this.ctxA.currentTime, 0.05);
     }
   }
 
   toggleMute() {
     this.muted = !this.muted;
     try { localStorage.setItem('er_muted', this.muted ? '1' : '0'); } catch (e) {}
-    if (this.ready) this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume * 0.8, this.ctxA.currentTime, 0.05);
+    if (this.ready) this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume * this.out, this.ctxA.currentTime, 0.05);
     return this.muted;
   }
 }
