@@ -243,6 +243,7 @@ body.theme-ink #paperOverlay { opacity: 1; }
 #touch { position: fixed; inset: 0; display: none; pointer-events: none; z-index: 21; }
 #touch.visible { display: block; }
 .t-group { position: absolute; bottom: max(52px, env(safe-area-inset-bottom)); display: flex; gap: 14px; align-items: flex-end; }
+.t-stack { display: flex; flex-direction: column; gap: 14px; }
 .t-group.left { left: 20px; }
 .t-group.right { right: 20px; }
 .t-btn {

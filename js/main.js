@@ -688,7 +688,7 @@ class Game {
   bindInput() {
     this.input.onKey((code, down) => {
       if (!down) return;
-      this.audio.init();
+      this.audio.unlock();
       if (code === 'KeyM') this.ui.setMuted(this.audio.toggleMute());
       if (this.state === 'run') {
         if (code === 'Escape') this.pauseGame();
@@ -701,8 +701,14 @@ class Game {
         if (code === 'Escape') this.goMenu();
       }
     });
-    // 任意交互解锁音频
-    window.addEventListener('pointerdown', () => this.audio.init(), { once: true });
+    // 任意交互解锁音频：移动端 WebView 只认手势内的 resume（touchend 兼容旧 iOS/微信），
+    // 且切后台后上下文可能再次挂起，故持续监听而非 once
+    const unlockAudio = () => this.audio.unlock();
+    window.addEventListener('pointerdown', unlockAudio);
+    window.addEventListener('touchend', unlockAudio);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) unlockAudio();
+    });
 
     // 拍照模式轨道控制
     const canvas = $('gl');
@@ -763,7 +769,7 @@ class Game {
       if (isRun) {
         if (this.input.accel) this.player.targetSpeed = Math.min(this.player.vMaxEff, this.player.targetSpeed + 16 * rawDt);
         else if (this.input.brake) this.player.targetSpeed = Math.max(CONFIG.vMin, this.player.targetSpeed - 30 * rawDt);
-        else if (!IS_MOBILE) this.player.targetSpeed += (CONFIG.vDefault - this.player.targetSpeed) * Math.min(1, rawDt * 0.5);
+        else this.player.targetSpeed += (CONFIG.vDefault - this.player.targetSpeed) * Math.min(1, rawDt * 0.5);
       }
       this.player.update(dt, input, this.gameplay);
       this.topSpeed = Math.max(this.topSpeed || 0, this.player.speed);

@@ -52,7 +52,10 @@
 <!-- 触屏控制 -->
 <div id="touch">
   <div class="t-group left">
-    <button id="tB" class="t-btn small">减速</button>
+    <div class="t-stack">
+      <button id="tA" class="t-btn small">加速</button>
+      <button id="tB" class="t-btn small">减速</button>
+    </div>
     <button id="tL" class="t-btn" aria-label="左转">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>
     </button>
@@ -115,7 +118,7 @@
     </button>
     <div id="histList" class="rec-list" style="display:none"></div>
     <div class="menu-footer">
-      <span class="hint">A/D 转向 · W/S 调速 · Shift/空格 氮气 · P 拍照 · M 静音<br>手机：左右按钮转向，自动巡航</span>
+      <span class="hint">A/D 转向 · W/S 调速 · Shift/空格 氮气 · P 拍照 · M 静音<br>手机：左右按钮转向，加速/减速控速，NOS 氮气</span>
       <span class="footer-btns">
         <button id="btnSettings" class="icon-btn" title="设置" aria-label="设置">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.7 1.7 0 00-1.87-.34 1.7 1.7 0 00-1 1.55V21a2 2 0 11-4 0v-.09a1.7 1.7 0 00-1-1.55 1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.7 1.7 0 00.34-1.87 1.7 1.7 0 00-1.55-1H3a2 2 0 110-4h.09a1.7 1.7 0 001.55-1 1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06a1.7 1.7 0 001.87.34h.01a1.7 1.7 0 001-1.55V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.55h.01a1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06a1.7 1.7 0 00-.34 1.87v.01a1.7 1.7 0 001.55 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.55 1z"/></svg>

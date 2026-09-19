@@ -17,6 +17,7 @@ export class AudioSystem {
       const AC = window.AudioContext || window.webkitAudioContext;
       this.ctxA = new AC();
       const c = this.ctxA;
+      this.resumeCtx();
       this.master = c.createGain();
       this.master.gain.value = this.muted ? 0 : this.volume * 0.8;
       const comp = c.createDynamicsCompressor();
@@ -52,6 +53,24 @@ export class AudioSystem {
       this.ready = true;
       this.startAmbient();
     } catch (e) { console.warn('audio init failed', e); }
+  }
+
+  // 移动端解锁：iOS/部分 WebView 创建后处于 suspended，需在手势内 resume + 播放静音缓冲
+  resumeCtx() {
+    const c = this.ctxA;
+    if (!c || c.state !== 'suspended') return;
+    c.resume();
+    const buf = c.createBuffer(1, 1, 22050);
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    src.connect(c.destination);
+    src.start(0);
+  }
+
+  // 在任意用户手势中调用，安全且幂等
+  unlock() {
+    if (!this.ready) this.init();
+    this.resumeCtx();
   }
 
   startAmbient() {

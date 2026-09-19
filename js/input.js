@@ -38,6 +38,7 @@ export class InputSystem {
     bind('tR', 'right');
     bind('tN', 'nitro');
     bind('tB', 'brake');
+    bind('tA', 'accel');
   }
 
   get steer() {
