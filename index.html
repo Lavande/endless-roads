@@ -6,6 +6,15 @@
 <title>无尽公路 Endless Roads</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23101420'/%3E%3Cpath d='M22 52 L28 12 h8 L42 52 Z' fill='%233a4152'/%3E%3Cpath d='M32 17 L32 47' stroke='%23ffffff' stroke-width='2.5' stroke-dasharray='5 5'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css">
+<script>
+  // 首帧前确定语言（与 js/i18n.js 的检测逻辑保持一致），避免加载页文字闪错语言
+  (function () {
+    var l = null;
+    try { l = localStorage.getItem('er_lang'); } catch (e) {}
+    if (l !== 'zh' && l !== 'en') l = ((navigator.language || '').toLowerCase().indexOf('zh') === 0) ? 'zh' : 'en';
+    document.documentElement.lang = (l === 'zh') ? 'zh-CN' : 'en';
+  })();
+</script>
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.js" } }
 </script>
@@ -21,21 +30,21 @@
 <div id="hud" class="panel">
   <div class="hud-left">
     <div class="spd-box"><span id="spd">0</span><span class="unit">km/h</span></div>
-    <div class="stat"><span class="stat-label">里程</span><span class="stat-val"><b id="dist">0.0</b><span class="stat-unit">km</span></span></div>
-    <div class="stat"><span class="stat-label">得分</span><span class="stat-val"><b id="score">0</b></span></div>
-    <div id="comboBox"><span class="combo-label">连击</span><span id="comboVal">×2</span></div>
+    <div class="stat"><span class="stat-label" data-i18n="hudDist">里程</span><span class="stat-val"><b id="dist">0.0</b><span class="stat-unit">km</span></span></div>
+    <div class="stat"><span class="stat-label" data-i18n="hudScore">得分</span><span class="stat-val"><b id="score">0</b></span></div>
+    <div id="comboBox"><span class="combo-label" data-i18n="hudCombo">连击</span><span id="comboVal">×2</span></div>
     <div id="multBox">×1.5</div>
   </div>
   <div class="hud-right">
     <span id="themeTag" class="tag"></span>
     <span id="modeTag" class="tag accent"></span>
-    <button id="btnPhoto" class="icon-btn" title="拍照模式 (P)" aria-label="拍照模式">
+    <button id="btnPhoto" class="icon-btn" data-i18n-title="photoMode" data-i18n-aria="photoMode" title="拍照模式 (P)" aria-label="拍照模式">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7l1.5-2.5h3L15 7"/><circle cx="12" cy="13.2" r="3.2"/></svg>
     </button>
-    <button id="btnPause" class="icon-btn" title="暂停 (Esc)" aria-label="暂停">
+    <button id="btnPause" class="icon-btn" data-i18n-title="pause" data-i18n-aria="pause" title="暂停 (Esc)" aria-label="暂停">
       <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5" width="3.4" height="14" rx="1.2"/><rect x="13.6" y="5" width="3.4" height="14" rx="1.2"/></svg>
     </button>
-    <button id="btnMuteHud" class="icon-btn" title="静音 (M)" aria-label="静音">
+    <button id="btnMuteHud" class="icon-btn" data-i18n-title="mute" data-i18n-aria="mute" title="静音 (M)" aria-label="静音">
       <svg class="ic ic-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 19V5L7.5 9.5H4z" fill="currentColor" stroke="none"/><path d="M15.2 9.2a4.4 4.4 0 010 5.6"/><path d="M17.8 6.8a8.2 8.2 0 010 10.4"/></svg>
       <svg class="ic ic-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 19V5L7.5 9.5H4z" fill="currentColor" stroke="none"/><path d="M15.6 9.6l5 4.8"/><path d="M20.6 9.6l-5 4.8"/></svg>
     </button>
@@ -53,16 +62,16 @@
 <div id="touch">
   <div class="t-group left">
     <div class="t-stack">
-      <button id="tA" class="t-btn small">加速</button>
-      <button id="tB" class="t-btn small">减速</button>
+      <button id="tA" class="t-btn small" data-i18n="speedUp">加速</button>
+      <button id="tB" class="t-btn small" data-i18n="slowDown">减速</button>
     </div>
-    <button id="tL" class="t-btn" aria-label="左转">
+    <button id="tL" class="t-btn" data-i18n-aria="steerLeft" aria-label="左转">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>
     </button>
   </div>
   <div class="t-group right">
     <button id="tN" class="t-btn nitro">NOS</button>
-    <button id="tR" class="t-btn" aria-label="右转">
+    <button id="tR" class="t-btn" data-i18n-aria="steerRight" aria-label="右转">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>
     </button>
   </div>
@@ -71,8 +80,8 @@
 <!-- 主菜单 -->
 <div id="menu" class="panel visible">
   <div class="menu-card">
-    <h1>无尽公路</h1>
-    <p class="subtitle">Endless Roads · 开往地平线，不设终点</p>
+    <h1 data-i18n="appTitle">无尽公路</h1>
+    <p class="subtitle" data-i18n="subtitle">Endless Roads · 开往地平线，不设终点</p>
     <div class="theme-grid">
       <button class="theme-card" data-theme="sunset"><div class="thumb g-sunset"></div><span class="tc-name">黄昏旷野</span><span class="tc-en">Golden Dusk</span></button>
       <button class="theme-card" data-theme="neon"><div class="thumb g-neon"></div><span class="tc-name">赛博霓虹</span><span class="tc-en">Neon Drive</span></button>
@@ -81,14 +90,14 @@
     </div>
     <div id="garage" class="garage">
       <div class="garage-head">
-        <button id="carPrev" class="icon-btn" aria-label="上一台车">
+        <button id="carPrev" class="icon-btn" data-i18n-aria="prevCar" aria-label="上一台车">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>
         </button>
         <div class="car-title">
           <span id="carName" class="car-name">灵动掀背</span>
           <span id="carEn" class="car-en">ZIPPY HATCH</span>
         </div>
-        <button id="carNext" class="icon-btn" aria-label="下一台车">
+        <button id="carNext" class="icon-btn" data-i18n-aria="nextCar" aria-label="下一台车">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>
         </button>
       </div>
@@ -100,30 +109,31 @@
         <button id="carSelect" class="btn car-select">选用</button>
       </div>
     </div>
-    <button id="btnFree" class="btn primary big">自由驾驶</button>
+    <button id="btnFree" class="btn primary big" data-i18n="freeRoam">自由驾驶</button>
     <button id="btnDaily" class="btn daily">
-      <span class="daily-title">每日挑战 · 全球同一条路</span>
+      <span class="daily-title" data-i18n="dailyTitle">每日挑战 · 全球同一条路</span>
       <span id="dailyDate" class="daily-date"></span>
       <span id="dailyBest" class="daily-best"></span>
     </button>
     <button id="btnTime" class="btn daily">
-      <span class="daily-title">限时挑战 · 光门续时</span>
-      <span class="daily-date">初始 60 秒，穿过光门加时，看你能跑多远</span>
+      <span class="daily-title" data-i18n="timeTitle">限时挑战 · 光门续时</span>
+      <span class="daily-date" data-i18n="timeDesc">初始 60 秒，穿过光门加时，看你能跑多远</span>
     </button>
     <div id="recList" class="rec-list"></div>
     <div id="achSummary" class="ach-summary"></div>
     <button id="btnHistory" class="btn daily">
-      <span class="daily-title">最近行程</span>
+      <span class="daily-title" data-i18n="history">最近行程</span>
       <span id="histSummary" class="daily-date"></span>
     </button>
     <div id="histList" class="rec-list" style="display:none"></div>
     <div class="menu-footer">
-      <span class="hint">A/D 转向 · W/S 调速 · Shift/空格 氮气 · P 拍照 · M 静音<br>手机：左右按钮转向，加速/减速控速，NOS 氮气</span>
+      <span class="hint"><span data-i18n="hintKeys">A/D 转向 · W/S 调速 · Shift/空格 氮气 · P 拍照 · M 静音</span><br><span data-i18n="hintTouch">手机：左右按钮转向，加速/减速控速，NOS 氮气</span></span>
       <span class="footer-btns">
-        <button id="btnSettings" class="icon-btn" title="设置" aria-label="设置">
+        <button id="btnLang" class="icon-btn lang-btn" data-i18n-aria="switchLang" aria-label="切换语言">EN</button>
+        <button id="btnSettings" class="icon-btn" data-i18n-title="settings" data-i18n-aria="settings" title="设置" aria-label="设置">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.7 1.7 0 00-1.87-.34 1.7 1.7 0 00-1 1.55V21a2 2 0 11-4 0v-.09a1.7 1.7 0 00-1-1.55 1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.7 1.7 0 00.34-1.87 1.7 1.7 0 00-1.55-1H3a2 2 0 110-4h.09a1.7 1.7 0 001.55-1 1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06a1.7 1.7 0 001.87.34h.01a1.7 1.7 0 001-1.55V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.55h.01a1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06a1.7 1.7 0 00-.34 1.87v.01a1.7 1.7 0 001.55 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.55 1z"/></svg>
         </button>
-        <button id="btnMute" class="icon-btn" aria-label="静音">
+        <button id="btnMute" class="icon-btn" data-i18n-aria="mute" aria-label="静音">
           <svg class="ic ic-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 19V5L7.5 9.5H4z" fill="currentColor" stroke="none"/><path d="M15.2 9.2a4.4 4.4 0 010 5.6"/><path d="M17.8 6.8a8.2 8.2 0 010 10.4"/></svg>
           <svg class="ic ic-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 19V5L7.5 9.5H4z" fill="currentColor" stroke="none"/><path d="M15.6 9.6l5 4.8"/><path d="M20.6 9.6l-5 4.8"/></svg>
         </button>
@@ -135,71 +145,77 @@
 <!-- 暂停 -->
 <div id="pause" class="panel">
   <div class="menu-card small">
-    <h2>已暂停</h2>
-    <button id="btnResume" class="btn primary big">继续驾驶</button>
-    <button id="btnRestart" class="btn big">重新开始</button>
-    <button id="btnPauseSettings" class="btn big">设置</button>
-    <button id="btnEnd" class="btn big">结束旅程 · 生成战报</button>
-    <button id="btnMenu" class="btn ghost big">回主菜单</button>
+    <h2 data-i18n="paused">已暂停</h2>
+    <button id="btnResume" class="btn primary big" data-i18n="resume">继续驾驶</button>
+    <button id="btnRestart" class="btn big" data-i18n="restart">重新开始</button>
+    <button id="btnPauseSettings" class="btn big" data-i18n="settings">设置</button>
+    <button id="btnEnd" class="btn big" data-i18n="finishRun">结束旅程 · 生成战报</button>
+    <button id="btnMenu" class="btn ghost big" data-i18n="mainMenu">回主菜单</button>
   </div>
 </div>
 
 <!-- 拍照模式 -->
 <div id="photoBar" class="panel">
-  <div class="photo-tip">拖动旋转 · 滚轮/双指缩放</div>
+  <div class="photo-tip" data-i18n="photoTip">拖动旋转 · 滚轮/双指缩放</div>
   <div class="photo-actions">
-    <button id="btnShot" class="btn primary">保存照片</button>
-    <button id="btnPhotoExit" class="btn ghost">退出 (P)</button>
+    <button id="btnShot" class="btn primary" data-i18n="savePhotoBtn">保存照片</button>
+    <button id="btnPhotoExit" class="btn ghost" data-i18n="photoExit">退出 (P)</button>
   </div>
 </div>
 
 <!-- 战报分享 -->
 <div id="shareModal" class="panel">
   <div class="menu-card share-card">
-    <h2>旅程战报</h2>
-    <img id="shareImg" alt="战报卡片">
+    <h2 data-i18n="runSummary">旅程战报</h2>
+    <img id="shareImg" data-i18n-alt="shareAlt" alt="战报卡片">
     <div class="share-actions">
-      <button id="btnShare" class="btn primary">分享</button>
-      <button id="btnSave" class="btn">保存图片</button>
-      <button id="btnCopy" class="btn">复制战报</button>
+      <button id="btnShare" class="btn primary" data-i18n="share">分享</button>
+      <button id="btnSave" class="btn" data-i18n="saveImage">保存图片</button>
+      <button id="btnCopy" class="btn" data-i18n="copyText">复制战报</button>
     </div>
-    <button id="btnCloseShare" class="btn ghost big">回主菜单</button>
+    <button id="btnCloseShare" class="btn ghost big" data-i18n="mainMenu">回主菜单</button>
   </div>
 </div>
 
 <!-- 设置 -->
 <div id="settings" class="panel">
   <div class="menu-card small">
-    <h2>设置</h2>
+    <h2 data-i18n="settings">设置</h2>
     <div class="set-row">
-      <label>音量</label>
-      <input id="setVolume" type="range" min="0" max="100" value="80">
-    </div>
-    <div class="set-row">
-      <label>测试声音</label>
-      <button id="setAudioTest" class="toggle">播放</button>
-    </div>
-    <p id="audioNote" class="set-note" style="display:none">iPhone 请先关闭侧边静音拨片（拨片露出橙色点为静音），否则系统会静掉游戏声音。</p>
-    <div class="set-row">
-      <label>画质</label>
-      <div class="seg" id="setQuality">
-        <button data-q="low">流畅</button><button data-q="medium">均衡</button><button data-q="high">精美</button>
+      <label data-i18n="language">语言</label>
+      <div class="seg" id="setLangSeg">
+        <button data-lang="zh">中文</button><button data-lang="en">English</button>
       </div>
     </div>
     <div class="set-row">
-      <label>昼夜流转</label>
-      <button id="setDayNight" class="toggle on">开</button>
+      <label data-i18n="volume">音量</label>
+      <input id="setVolume" type="range" min="0" max="100" value="80">
     </div>
     <div class="set-row">
-      <label>相机距离</label>
+      <label data-i18n="testSound">测试声音</label>
+      <button id="setAudioTest" class="toggle" data-i18n="play">播放</button>
+    </div>
+    <p id="audioNote" class="set-note" style="display:none" data-i18n="audioNote">iPhone 请先关闭侧边静音拨片（拨片露出橙色点为静音），否则系统会静掉游戏声音。</p>
+    <div class="set-row">
+      <label data-i18n="quality">画质</label>
+      <div class="seg" id="setQuality">
+        <button data-q="low" data-i18n="qLow">流畅</button><button data-q="medium" data-i18n="qMedium">均衡</button><button data-q="high" data-i18n="qHigh">精美</button>
+      </div>
+    </div>
+    <div class="set-row">
+      <label data-i18n="dayNight">昼夜流转</label>
+      <button id="setDayNight" class="toggle on" data-i18n="on">开</button>
+    </div>
+    <div class="set-row">
+      <label data-i18n="camDist">相机距离</label>
       <input id="setCam" type="range" min="80" max="150" value="100">
     </div>
-    <button id="btnSetBack" class="btn primary big">返回</button>
+    <button id="btnSetBack" class="btn primary big" data-i18n="back">返回</button>
   </div>
 </div>
 
 <!-- 事件提示 -->
-<div id="loading" class="panel visible"><div class="loader"><span class="loader-road"></span>正在铺路…</div></div>
+<div id="loading" class="panel visible"><div class="loader"><span class="loader-road"></span><span class="i18n-zh">正在铺路…</span><span class="i18n-en">Paving the road…</span></div></div>
 
 <script>
   // 启动错误捕获（仅调试展示）

@@ -80,6 +80,8 @@ body.theme-ink #paperOverlay { opacity: 1; }
   font-size: 40px; letter-spacing: 11px; text-indent: 11px; color: #fff;
   font-weight: 800; text-shadow: 0 4px 30px rgba(0,0,0,0.55);
 }
+/* 英文标题：拉丁字母不适合中文的大字距，改小并大写 */
+:lang(en) .menu-card h1 { text-transform: uppercase; letter-spacing: 4px; text-indent: 4px; }
 .menu-card h2 { font-size: 26px; color: #fff; margin-bottom: 4px; }
 .subtitle { color: rgba(255,255,255,0.55); font-size: 14px; margin-top: -8px; letter-spacing: 1px; }
 
@@ -100,6 +102,8 @@ body.theme-ink #paperOverlay { opacity: 1; }
 .g-ink { background: linear-gradient(160deg,#f3efe6 0%,#cfc9ba 60%,#8f887a 100%); }
 .tc-name { margin-top: 2px; }
 .tc-en { font-size: 10.5px; font-weight: 500; letter-spacing: 0.6px; color: rgba(255,255,255,0.45); text-transform: uppercase; margin-top: 1px; }
+/* 英文模式主名已是英文，副标题行冗余 */
+:lang(en) .tc-en, :lang(en) .car-en { display: none; }
 
 .btn.daily {
   flex-direction: column; gap: 3px; padding: 14px;
@@ -128,6 +132,8 @@ body.theme-ink #paperOverlay { opacity: 1; }
 .car-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
 .bar-row { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: rgba(255,255,255,0.55); }
 .bar-row span { width: 26px; flex: none; }
+/* 英文标签（Speed/Handling/Off-road/Nitro）比两字汉字长 */
+:lang(en) .bar-row span { width: 62px; }
 .bar-row .bar { flex: 1; height: 5px; border-radius: 99px; background: rgba(255,255,255,0.12); overflow: hidden; }
 .bar-row .bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #ffffff)); }
 .garage-foot { display: flex; align-items: center; gap: 10px; min-height: 30px; }
@@ -257,6 +263,8 @@ body.theme-ink #paperOverlay { opacity: 1; }
 .t-btn::after { content: ''; position: absolute; inset: -14px; border-radius: 50%; }
 .t-btn .ic { width: 30px; height: 30px; }
 .t-btn.small { width: 64px; height: 64px; font-size: 15px; }
+/* 英文模式加/减速显示为 +/− 符号，放大到与中文两字视觉等重 */
+:lang(en) .t-btn.small { font-size: 30px; font-weight: 700; }
 .t-btn.nitro { background: rgba(34,230,246,0.2); border-color: rgba(34,230,246,0.6); font-size: 16px; letter-spacing: 1px; }
 .t-btn.active { background: rgba(255,255,255,0.35); transform: scale(0.94); }
 
@@ -278,6 +286,10 @@ body.theme-ink #paperOverlay { opacity: 1; }
 /* ---------- 加载 ---------- */
 #loading { align-items: center; justify-content: center; background: #0a0c14; z-index: 50; }
 .loader { color: rgba(255,255,255,0.7); font-size: 18px; letter-spacing: 2px; display: flex; align-items: center; gap: 14px; }
+/* 加载页双语：head 内联脚本在首帧前设好 html[lang]，模块加载完成前就能显示正确语言 */
+.i18n-en { display: none; }
+:lang(en) .i18n-en { display: inline; }
+:lang(en) .i18n-zh { display: none; }
 .loader-road {
   width: 52px; height: 3px; border-radius: 2px;
   background-image: linear-gradient(90deg, transparent 0 4px, var(--accent) 4px 14px, transparent 14px 22px, var(--accent) 22px 32px, transparent 32px);
@@ -303,12 +315,15 @@ body.theme-ink #paperOverlay { opacity: 1; }
 }
 .toggle.on { background: var(--accent); color: #14100a; border-color: transparent; }
 .footer-btns { display: flex; gap: 8px; }
+/* 主菜单语言快捷切换：文字按钮（EN / 中） */
+.lang-btn { font-size: 12px; font-weight: 800; letter-spacing: 0.5px; }
 
 /* ---------- 移动端适配 ---------- */
 @media (max-width: 640px) {
   #spd { font-size: 38px; }
   .menu-card { padding: 22px 18px 16px; }
   .menu-card h1 { font-size: 34px; letter-spacing: 8px; }
+  :lang(en) .menu-card h1 { letter-spacing: 3px; text-indent: 3px; }
   .thumb { height: 44px; }
   #hud { padding: max(10px, env(safe-area-inset-top)) 12px 12px; }
   .tag { font-size: 11px; padding: 5px 9px; }
@@ -326,6 +341,7 @@ body.theme-ink #paperOverlay { opacity: 1; }
 @media (max-height: 540px) {
   .menu-card { padding: 14px 20px 12px; gap: 7px; }
   .menu-card h1 { font-size: 26px; letter-spacing: 6px; text-indent: 6px; }
+  :lang(en) .menu-card h1 { letter-spacing: 2.5px; text-indent: 2.5px; }
   .menu-card h2 { font-size: 20px; }
   .subtitle { font-size: 11px; margin-top: -4px; }
   .theme-grid { gap: 8px; }

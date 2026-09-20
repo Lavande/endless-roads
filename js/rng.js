@@ -1,4 +1,6 @@
 // 种子随机与噪声工具
+import { getLang } from './i18n.js';
+
 export function mulberry32(seed) {
   let a = seed >>> 0;
   return function () {
@@ -26,10 +28,12 @@ export function dailyKey(d = new Date()) {
   return `${y}${m}${day}`;
 }
 export function dailyLabel(d = new Date()) {
-  const y = d.getUTCFullYear();
-  const m = d.getUTCMonth() + 1;
-  const day = d.getUTCDate();
-  return `${y} 年 ${m} 月 ${day} 日`;
+  // UTC 日期（全球同一天），按当前语言格式化
+  const utc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const opts = getLang() === 'en'
+    ? { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric' }
+    : { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' };
+  return utc.toLocaleDateString(getLang() === 'en' ? 'en-US' : 'zh-CN', opts);
 }
 export function dailySeed(key = dailyKey()) {
   return hashStr('EndlessRoads-' + key);

@@ -1,4 +1,6 @@
 // 分享卡片合成（Canvas2D）+ Web Share / 下载 / 剪贴板
+import { t, getLang } from './i18n.js';
+
 export function buildShareCard({ screenshot, themeName, dateLabel, modeLabel, stats, accent, bgColors }) {
   const W = 1080, H = 1440;
   const canvas = document.createElement('canvas');
@@ -33,11 +35,16 @@ export function buildShareCard({ screenshot, themeName, dateLabel, modeLabel, st
     }
   }
 
-  // 标题
+  // 标题（中文为手动空格排开的四字，英文为字距收紧的大写）
   g.textAlign = 'center';
   g.fillStyle = 'rgba(255,255,255,0.92)';
-  g.font = '600 64px "PingFang SC", "Microsoft YaHei", sans-serif';
-  g.fillText('无 尽 公 路', W / 2, 950);
+  if (getLang() === 'en') {
+    g.font = '600 60px "SF Pro Display", "PingFang SC", sans-serif';
+    drawTracked(g, t('cardTitle'), W / 2, 950, 10);
+  } else {
+    g.font = '600 64px "PingFang SC", "Microsoft YaHei", sans-serif';
+    g.fillText(t('cardTitle'), W / 2, 950);
+  }
   g.font = '400 34px "PingFang SC", sans-serif';
   g.fillStyle = 'rgba(255,255,255,0.65)';
   g.fillText(`${themeName} · ${modeLabel}`, W / 2, 1002);
@@ -45,12 +52,12 @@ export function buildShareCard({ screenshot, themeName, dateLabel, modeLabel, st
 
   // 数据卡：纯排版（标签 + 数值 + 主题色条）
   const items = [
-    ['得分', fmt(stats.score)],
-    ['里程', stats.distKm + ' km'],
-    ['极速', stats.topKmh + ' km/h'],
-    ['险过', '×' + stats.nearMisses],
-    ['最高连击', '×' + stats.maxCombo],
-    ['收集', '×' + stats.collects],
+    [t('stat.score'), fmt(stats.score)],
+    [t('stat.dist'), stats.distKm + ' km'],
+    [t('stat.top'), stats.topKmh + ' km/h'],
+    [t('stat.nearMiss'), '×' + stats.nearMisses],
+    [t('stat.combo'), '×' + stats.maxCombo],
+    [t('stat.collect'), '×' + stats.collects],
   ];
   const colW = (W - 120 - 40) / 3, rowH = 118;
   items.forEach((it, i) => {
@@ -81,11 +88,11 @@ export function buildShareCard({ screenshot, themeName, dateLabel, modeLabel, st
 
 export function shareText({ themeName, dateLabel, modeLabel, stats }) {
   return [
-    `【无尽公路】${themeName} · ${modeLabel}`,
+    t('shareTextTitle', { theme: themeName, mode: modeLabel }),
     `${dateLabel}`,
-    `里程 ${stats.distKm} km · 极速 ${stats.topKmh} km/h`,
-    `险过 ×${stats.nearMisses} · 最高连击 ×${stats.maxCombo} · 收集 ×${stats.collects}`,
-    `得分 ${fmt(stats.score)}`,
+    t('shareTextStats', { km: stats.distKm, top: stats.topKmh }),
+    t('shareTextCombo', { nm: stats.nearMisses, combo: stats.maxCombo, collect: stats.collects }),
+    t('shareTextScore', { score: fmt(stats.score) }),
   ].join('\n');
 }
 
@@ -123,6 +130,20 @@ function roundRect(g, x, y, w, h, r) {
   g.arcTo(x, y + h, x, y, r);
   g.arcTo(x, y, x + w, y, r);
   g.closePath();
+}
+
+// 手动字距的居中绘制（ctx.letterSpacing 兼容性不全，逐字排布更稳）
+function drawTracked(g, text, cx, y, spacing) {
+  const widths = [...text].map(ch => g.measureText(ch).width);
+  const total = widths.reduce((a, b) => a + b, 0) + spacing * (text.length - 1);
+  let x = cx - total / 2;
+  const prevAlign = g.textAlign;
+  g.textAlign = 'left';
+  [...text].forEach((ch, i) => {
+    g.fillText(ch, x, y);
+    x += widths[i] + spacing;
+  });
+  g.textAlign = prevAlign;
 }
 
 function toImage(src) {

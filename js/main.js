@@ -23,6 +23,7 @@ import { Settings } from './settings.js';
 import { addRun, getRuns } from './runs.js';
 import { dailyInfo, saveDailyResult, updateRecords, getRecords } from './daily.js';
 import { buildShareCard, shareText, shareCard, preloadImage, downloadCanvas } from './share.js';
+import { t, getLang, setLang, applyStatic, nameOf, descOf, fmtRunDate } from './i18n.js';
 
 // ---------------- UI ----------------
 const $ = (id) => document.getElementById(id);
@@ -71,7 +72,7 @@ class UI {
   }
   nearMiss(pts, combo, oncoming) {
     const p = this.el.popup;
-    p.textContent = (oncoming ? '对向险过 +' : '险过 +') + pts + (combo > 1 ? `  ×${combo}` : '');
+    p.textContent = t(oncoming ? 'nearMissOncoming' : 'nearMiss', { pts }) + (combo > 1 ? `  ×${combo}` : '');
     p.style.fontSize = Math.min(30 + combo * 1.5, 46) + 'px';
     p.classList.remove('show');
     void p.offsetWidth;
@@ -80,7 +81,7 @@ class UI {
   }
   bump() {
     this.flashFx('#ff3b30');
-    this.el.popup.textContent = '碰撞';
+    this.el.popup.textContent = t('crash');
     this.el.popup.classList.remove('show');
     void this.el.popup.offsetWidth;
     this.el.popup.classList.add('show');
@@ -128,32 +129,41 @@ class UI {
   refreshMenu(daily, records) {
     this.el.dailyDate.textContent = daily.label;
     this.el.dailyBest.textContent = daily.best
-      ? `今日最佳 ${daily.best.score} 分 · ${(daily.best.distKm || 0)} km`
-      : '今日尚无记录，来跑一趟？';
+      ? t('dailyBest', { score: daily.best.score.toLocaleString('en-US'), km: daily.best.distKm || 0 })
+      : t('dailyEmpty');
     const rows = THEME_ORDER.map(k => {
-      const t = THEMES[k];
+      const th = THEMES[k];
       const r = records[k];
-      return `<div class="rec-row"><span>${t.name}</span><span>${r ? `最佳 ${r.bestScore} 分 · ${(r.bestDist / 1000).toFixed(1)} km` : '—'}</span></div>`;
+      return `<div class="rec-row"><span>${nameOf(th)}</span><span>${r ? t('bestRow', { score: r.bestScore.toLocaleString('en-US'), km: (r.bestDist / 1000).toFixed(1) }) : '—'}</span></div>`;
     }).join('');
     this.el.recList.innerHTML = rows;
   }
   setAch(n, total) {
     const el = document.getElementById('achSummary');
-    if (el) el.textContent = `🏆 里程碑成就 ${n} / ${total}`;
+    if (el) el.textContent = t('achSummary', { n, total });
   }
   renderHistory(runs) {
     const list = document.getElementById('histList');
     const summary = document.getElementById('histSummary');
     if (summary) {
       summary.textContent = runs.length
-        ? `共 ${runs.length} 次 · 最新 ${runs[0].score} 分`
-        : '还没有记录，来跑一趟';
+        ? t('historySum', { n: runs.length, score: runs[0].score.toLocaleString('en-US') })
+        : t('historyEmpty');
     }
     if (!list) return;
-    const modeName = { daily: '每日', time: '计时', free: '自由' };
-    list.innerHTML = runs.map(r =>
-      `<div class="rec-row"><span>${r.date} · ${r.theme}${r.car ? ' · ' + r.car : ''} · ${modeName[r.mode] || r.mode}</span><span>${r.score} 分 · ${r.distKm} km</span></div>`).join('')
-      || '<div class="rec-row"><span>—</span><span>—</span></div>';
+    // 新记录存 key（themeKey/carKey/t 时间戳），旧记录是渲染好的字符串，查不到 key 时原样回退显示
+    const modeKey = { daily: 'modeDaily', time: 'modeTime', free: 'modeFree' };
+    list.innerHTML = runs.map(r => {
+      const th = r.themeKey && THEMES[r.themeKey];
+      const car = r.carKey && CARS.find(c => c.key === r.carKey);
+      const left = [
+        r.t ? fmtRunDate(r.t) : (r.date || ''),
+        th ? nameOf(th) : (r.theme || ''),
+        car ? nameOf(car) : (r.car || ''),
+        modeKey[r.mode] ? t(modeKey[r.mode]) : (r.mode || ''),
+      ].filter(Boolean).join(' · ');
+      return `<div class="rec-row"><span>${left}</span><span>${t('historyRow', { score: r.score.toLocaleString('en-US'), km: r.distKm })}</span></div>`;
+    }).join('') || '<div class="rec-row"><span>—</span><span>—</span></div>';
   }
   syncSettings(d) {    const vol = document.getElementById('setVolume');
     const cam = document.getElementById('setCam');
@@ -161,14 +171,16 @@ class UI {
     if (vol) vol.value = Math.round(d.volume * 100);
     if (cam) cam.value = Math.round(d.camDist * 100);
     if (dn) {
-      dn.textContent = d.dayNight ? '开' : '关';
+      dn.textContent = t(d.dayNight ? 'on' : 'off');
       dn.classList.toggle('on', d.dayNight);
     }
     document.querySelectorAll('#setQuality button').forEach(b =>
       b.classList.toggle('on', b.dataset.q === d.quality));
+    document.querySelectorAll('#setLangSeg button').forEach(b =>
+      b.classList.toggle('on', b.dataset.lang === getLang()));
   }
   setTags(theme, mode) {
-    this.el.themeTag.textContent = theme.name;
+    this.el.themeTag.textContent = nameOf(theme);
     this.el.modeTag.textContent = mode;
   }
 }
@@ -180,17 +192,17 @@ function renderGarageUI(g) {
   const name = $id('carName'), en = $id('carEn'), desc = $id('carDesc');
   if (!name) return;
   const unlocked = isCarUnlocked(car);
-  name.textContent = car.name;
+  name.textContent = nameOf(car);
   en.textContent = car.en;
-  desc.textContent = car.desc;
+  desc.textContent = descOf(car);
   $id('carBars').innerHTML = Object.entries(car.bars).map(([k, v]) =>
-    `<div class="bar-row"><span>${k}</span><div class="bar"><i style="width:${Math.round(v * 100)}%"></i></div></div>`).join('');
+    `<div class="bar-row"><span>${t('bar.' + k)}</span><div class="bar"><i style="width:${Math.round(v * 100)}%"></i></div></div>`).join('');
   const lock = $id('carLock');
-  lock.textContent = unlocked ? '' : `🔒 单局得分达 ${car.unlockAt.toLocaleString('en-US')} 解锁`;
-  $id('carPager').textContent = `${g.garageIdx + 1} / ${g.cars.length} · 生涯最高 ${careerBestScore().toLocaleString('en-US')}`;
+  lock.textContent = unlocked ? '' : t('carLock', { score: car.unlockAt.toLocaleString('en-US') });
+  $id('carPager').textContent = t('carPager', { i: g.garageIdx + 1, n: g.cars.length, best: careerBestScore().toLocaleString('en-US') });
   const sel = $id('carSelect');
   const selected = g.selectedCar.key === car.key;
-  sel.textContent = selected ? '当前座驾' : (unlocked ? '选用' : '未解锁');
+  sel.textContent = selected ? t('carSelected') : (unlocked ? t('carSelect') : t('carLocked'));
   sel.disabled = selected || !unlocked;
   sel.classList.toggle('primary', !selected && unlocked);
 }
@@ -325,6 +337,11 @@ class Game {
     this.bindInput();
     this.ui.setMuted(this.audio.muted);
     this.settings.apply(this);
+    // 启动即应用当前语言的静态文案（与 head 内联脚本配合，加载页之前已就位）
+    applyStatic();
+    this.localizeThemeCards();
+    this.syncLangBtn();
+    this.ui.syncSettings(this.settings.data);
 
     // 菜单背景世界
     this.buildWorld(this.selectedTheme, (Date.now() & 0xffffffff) >>> 0, { silent: true });
@@ -354,6 +371,39 @@ class Game {
 
   renderGarage() {
     renderGarageUI(this);
+  }
+
+  // ---------- 语言切换 ----------
+  switchLang(lang) {
+    if (lang === getLang()) return;
+    setLang(lang); // 写偏好 + html[lang]/title + 静态 data-i18n 文案
+    this.localizeThemeCards();
+    this.syncLangBtn();
+    // 重渲染所有动态文案面板
+    this.ui.refreshMenu(dailyInfo(), getRecords());
+    this.ui.setAch(this.milestones.unlockedCount, this.milestones.total);
+    this.ui.renderHistory(getRuns());
+    this.renderGarage();
+    this.ui.syncSettings(this.settings.data);
+    // 驾驶/暂停中顺带刷新 HUD 标签；战报卡片是渲染好的位图，保持生成时语言即可
+    if (this.state === 'run' || this.state === 'pause' || this.state === 'photo') {
+      this.ui.setTags(this.theme, t(this.mode === 'daily' ? 'modeDaily' : this.mode === 'time' ? 'modeTime' : 'modeFree'));
+    }
+  }
+
+  // 主题卡中文名来自 THEMES 数据（避免词典与数据文件重复维护）
+  localizeThemeCards() {
+    document.querySelectorAll('.theme-card').forEach(card => {
+      const th = THEMES[card.dataset.theme];
+      const nameEl = card.querySelector('.tc-name');
+      if (th && nameEl) nameEl.textContent = nameOf(th);
+    });
+  }
+
+  // 快捷按钮显示目标语言名：中文界面显示 EN，英文界面显示 中
+  syncLangBtn() {
+    const b = $('btnLang');
+    if (b) b.textContent = getLang() === 'zh' ? 'EN' : '中';
   }
 
   // ---------- 世界构建 ----------
@@ -455,7 +505,7 @@ class Game {
     if (mode === 'time') {
       this.timeAttack = new TimeAttack({ scene: this.scene, road: this.road, theme: this.theme });
       this.timeAttack.onGain = (gain) => {
-        this.ui.toast(`光门 +${gain}s`);
+        this.ui.toast(t('gateGain', { s: gain }));
         this.audio.blip(4);
         this.ui.flashFx('#ffffff');
       };
@@ -466,12 +516,12 @@ class Game {
     this.milestones.beginRun();
     this.ui.hideAll();
     this.ui.show('hud');
-    this.ui.setTags(this.theme, mode === 'daily' ? '每日挑战' : mode === 'time' ? '计时赛' : '自由驾驶');
+    this.ui.setTags(this.theme, t(mode === 'daily' ? 'modeDaily' : mode === 'time' ? 'modeTime' : 'modeFree'));
     this.ui.setTime(mode === 'time' ? this.timeAttack.timeLeft : null);
     this.audio.setAmbient(this.theme);
     // 解锁失败兜底：告知玩家点按屏幕即可开启声音
     const st = this.audio.ctxA && this.audio.ctxA.state;
-    if (st && st !== 'running') this.ui.toast('🔇 点按屏幕任意处开启声音');
+    if (st && st !== 'running') this.ui.toast(t('soundLocked'));
   }
 
   goMenu() {
@@ -565,18 +615,21 @@ class Game {
       maxCombo: g.maxCombo,
       collects: g.collects,
     };
-    const modeLabel = (this.mode === 'daily' ? '每日挑战' : this.mode === 'time' ? '计时赛' : '自由驾驶') + ' · ' + (this.selectedCar ? this.selectedCar.name : '');
-    const dateLabel = new Date().toLocaleDateString('zh-CN');
+    const modeLabel = t(this.mode === 'daily' ? 'modeDaily' : this.mode === 'time' ? 'modeTime' : 'modeFree')
+      + ' · ' + (this.selectedCar ? nameOf(this.selectedCar) : '');
+    const now = Date.now();
+    const dateLabel = fmtRunDate(now);
     const record = updateRecords(theme.key, { dist: this.player.s, topSpeed: this.topSpeed, maxCombo: g.maxCombo, score: stats.score });
     recordCareerBest(stats.score);
-    addRun({ date: dateLabel, theme: theme.name, car: this.selectedCar ? this.selectedCar.name : '', mode: this.mode, score: stats.score, distKm: stats.distKm, topKmh: stats.topKmh, maxCombo: g.maxCombo });
+    // 存 key 而非渲染好的名称，历史列表按当前语言现渲染
+    addRun({ t: now, themeKey: theme.key, carKey: this.selectedCar ? this.selectedCar.key : '', mode: this.mode, score: stats.score, distKm: stats.distKm, topKmh: stats.topKmh, maxCombo: g.maxCombo });
     if (this.mode === 'daily') saveDailyResult(this.dailyKey, stats);
     const img = await preloadImage(shot);
     const card = buildShareCard({
-      screenshot: img, themeName: theme.name,
+      screenshot: img, themeName: nameOf(theme),
       dateLabel, modeLabel, stats, accent: theme.accent, bgColors: theme.shareBg,
     });
-    this.shareTextStr = shareText({ themeName: theme.name, dateLabel, modeLabel, stats });
+    this.shareTextStr = shareText({ themeName: nameOf(theme), dateLabel, modeLabel, stats });
     this.shareCanvas = card;
     $('shareImg').src = card.toDataURL('image/png');
     this.ui.hideAll();
@@ -632,12 +685,12 @@ class Game {
     on('setAudioTest', () => {
       const r = this.audio.testBeep();
       const msg = {
-        running: '🔊 声音正常',
-        muted: '当前处于静音，先取消静音再测试',
-        suspended: '音频被系统挂起，请再点一次',
-        interrupted: '音频被系统中断，请再点一次',
-      }[r] || '此设备不支持网页音频';
-      this.ui.toast(msg);
+        running: 'audioOk',
+        muted: 'audioMuted',
+        suspended: 'audioSuspended',
+        interrupted: 'audioInterrupted',
+      }[r] || 'audioUnsupported';
+      this.ui.toast(t(msg));
     });
     const live = (id, fn) => { const el = $(id); if (el) el.addEventListener('input', fn); };
     live('setVolume', (e) => {
@@ -664,6 +717,14 @@ class Game {
         this.ui.syncSettings(this.settings.data);
       });
     });
+    // 语言：设置面板分段选择 + 主菜单快捷按钮共用同一切换逻辑
+    document.querySelectorAll('#setLangSeg button').forEach(b => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.switchLang(b.dataset.lang);
+      });
+    });
+    on('btnLang', () => this.switchLang(getLang() === 'zh' ? 'en' : 'zh'));
     // 拍照
     on('btnShot', () => this.savePhoto());
     on('btnPhotoExit', () => this.exitPhoto());
@@ -672,12 +733,12 @@ class Game {
     on('btnShare', async () => {
       if (!this.shareCanvas) return;
       const r = await shareCard(this.shareCanvas, this.shareTextStr);
-      const hint = { shared: '已分享', copied: '已保存图片并复制战报', downloaded: '已保存图片', aborted: '' }[r];
-      if (hint) { this.ui.toast(hint); }
+      const key = { shared: 'shared', copied: 'sharedCopied', downloaded: 'sharedDownloaded', aborted: '' }[r];
+      if (key) { this.ui.toast(t(key)); }
     });
     on('btnCopy', async () => {
-      try { await navigator.clipboard.writeText(this.shareTextStr || ''); this.ui.toast('战报已复制'); }
-      catch (e) { this.ui.toast('复制失败'); }
+      try { await navigator.clipboard.writeText(this.shareTextStr || ''); this.ui.toast(t('copied')); }
+      catch (e) { this.ui.toast(t('copyFailed')); }
     });
     // 最近行程
     on('btnHistory', () => {
@@ -693,14 +754,14 @@ class Game {
   savePhoto() {
     this.renderFrame();
     this.renderer.domElement.toBlob((blob) => {
-      if (!blob) { this.ui.toast('保存失败'); return; }
+      if (!blob) { this.ui.toast(t('saveFailed')); return; }
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `endless-roads-photo-${Date.now()}.png`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 4000);
-      this.ui.toast('已保存到下载');
+      this.ui.toast(t('savedToDownloads'));
     }, 'image/png');
   }
 
@@ -818,7 +879,7 @@ class Game {
       // 分区提示（仅正式驾驶）
       if (isRun && this.zones) {
         const zoneName = this.zones.pollEnter(this.player.s);
-        if (zoneName) this.ui.toast(`进入 · ${zoneName}`);
+        if (zoneName) this.ui.toast(t('enterZone', { name: zoneName }));
       }
       if (isRun) this.runTime += rawDt;
       this.speedLines.active = this.player.nitroActive;

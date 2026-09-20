@@ -1,5 +1,6 @@
 // 随机环境事件：鸟群/仙鹤/热气球/流星/UFO/极光爆发/萤火爆发/光轨
 import * as THREE from 'three';
+import { t } from './i18n.js';
 
 const _v = new THREE.Vector3();
 
@@ -237,39 +238,39 @@ export class EventManager {
           .add(_v.set(0, 34 + this.rng() * 14, 0));
         ev.dir = new THREE.Vector3(-fr.right.x, 0.04, -fr.right.z).normalize();
         if (this.rng() < 0.5) { ev.dir.negate(); ev.group.position.copy(fr.pos).addScaledVector(fr.right, -(90 + this.rng() * 40)).add(_v.set(0, 36, 0)); }
-        toast && toast(isInk ? '一行白鹭上青天' : '一群飞鸟掠过天际');
+        toast && toast(t(isInk ? 'evEgrets' : 'evBirds'));
         break;
       }
       case 'balloons':
         ev = new Balloons(scene);
         ev.group.position.copy(fr.pos).addScaledVector(fr.right, 70).add(_v.set(0, 40, 0));
         ev.drift = new THREE.Vector3(-fr.right.x * 2, 0, -fr.right.z * 2);
-        toast && toast('热气球缓缓飘过');
+        toast && toast(t('evBalloons'));
         break;
       case 'meteor': {
         ev = new Meteor(scene);
         ev.mesh.position.add(_v.set(fr.pos.x, 0, fr.pos.z));
-        toast && toast('流星划过天际');
+        toast && toast(t('evMeteor'));
         break;
       }
       case 'ufo':
         ev = new Ufo(scene);
         ev.group.position.copy(fr.pos).addScaledVector(fr.right, -160).add(_v.set(0, 110, 0));
-        toast && toast('不明飞行物出没');
+        toast && toast(t('evUfo'));
         break;
       case 'auroraSurge':
-        if (this.ctx.aurora) { ev = new AuroraSurge(this.ctx.aurora); toast && toast('极光骤然爆发'); }
+        if (this.ctx.aurora) { ev = new AuroraSurge(this.ctx.aurora); toast && toast(t('evAurora')); }
         break;
       case 'fireflyBurst': {
         const pos = fr.pos.clone().addScaledVector(fr.right, 12 + this.rng() * 10);
         pos.y = this.ctx.terrain ? this.ctx.terrain.surfaceY(12, player.s + 200) + 1.5 : fr.pos.y + 1.5;
         ev = new FireflyBurst(scene, pos);
-        toast && toast('萤火虫群起舞');
+        toast && toast(t('evFireflies'));
         break;
       }
       case 'lightTrail':
         ev = new LightTrail(scene, road, player.s);
-        toast && toast('对向光轨呼啸而过');
+        toast && toast(t('evLightTrail'));
         break;
     }
     if (ev) this.active.push(ev);
