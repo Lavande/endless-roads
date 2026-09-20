@@ -60,14 +60,14 @@ export function buildShareCard({ screenshot, themeName, dateLabel, modeLabel, st
     roundRect(g, cx, cy, colW, rowH, 20);
     g.fill();
     g.fillStyle = accent;
-    g.fillRect(cx + 24, cy + 30, 36, 5);
+    g.fillRect(cx + 24, cy + 22, 36, 5);
     g.fillStyle = 'rgba(255,255,255,0.6)';
     g.font = '400 26px sans-serif';
     g.textAlign = 'left';
-    g.fillText(it[0], cx + 24, cy + 72);
+    g.fillText(it[0], cx + 24, cy + 57);
     g.fillStyle = '#ffffff';
     g.font = '700 44px "SF Pro Display", "PingFang SC", sans-serif';
-    g.fillText(String(it[1]), cx + 24, cy + 102);
+    g.fillText(String(it[1]), cx + 24, cy + 104);
   });
 
   // 页脚
